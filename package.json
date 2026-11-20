@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "TechnoFun 4.0 ID Badge Generator",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo 'Static site ready for Vercel'"
+    "start": "node server.js"
   }
 }
