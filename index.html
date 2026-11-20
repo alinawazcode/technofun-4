@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>TechnoFun 4.0 — ID Badge Generator</title>
-  <meta name="description" content="Official ID Badge Generator for TechnoFun 4.0. Generate and export your personalized high-resolution event badge.">
+  <meta name="description" content="Official ID Badge Generator for TechnoFun 4.0. Matches the official event badge design.">
   <meta name="theme-color" content="#0A0A0D">
 
   <!-- Google Fonts -->
@@ -23,27 +23,27 @@
           <span class="brand-badge">4.0</span>
           <div class="brand-titles">
             <h1 class="brand-title">TechnoFun</h1>
-            <p class="brand-subtitle">Official ID Badge Generator</p>
+            <p class="brand-subtitle">ID Badge Generator</p>
           </div>
         </div>
         <div class="header-actions">
-          <button id="refModeBtn" class="pill-btn" type="button" title="Toggle Reference View">Reference Mode</button>
-          <button id="debugModeBtn" class="pill-btn" type="button" title="Toggle Debug Outlines">Debug Boxes</button>
+          <button id="resetDefaultsBtn" class="pill-btn" type="button" title="Reset to reference badge values">Reset Design</button>
+          <button id="debugModeBtn" class="pill-btn" type="button" title="Toggle Layout Outlines">Debug Boxes</button>
         </div>
       </div>
     </header>
 
     <!-- Main Workspace -->
     <main class="main-workspace">
-      <!-- Left Column: Hero Badge Preview & Direct Controls -->
+      <!-- Left Column: Badge Preview & Canvas Controls -->
       <section class="preview-section" aria-label="Badge Preview">
         <div class="preview-card-wrap">
-          <div class="canvas-wrapper" id="canvasContainer">
-            <canvas id="badgeCanvas" width="1024" height="1536" aria-label="TechnoFun 4.0 Badge Preview"></canvas>
+          <div class="canvas-wrapper" id="canvasContainer" tabindex="0">
+            <canvas id="badgeCanvas" width="1024" height="1536" aria-label="TechnoFun 4.0 ID Badge Preview"></canvas>
             <div id="canvasOverlay" class="canvas-overlay" aria-hidden="true"></div>
           </div>
 
-          <!-- Photo Quick Tools (under canvas) -->
+          <!-- Photo Adjustment Tools (Shown under canvas) -->
           <div class="photo-controls-bar" id="photoQuickBar" style="display: none;">
             <div class="zoom-group">
               <button type="button" id="zoomOutBtn" class="icon-btn" title="Zoom Out" aria-label="Zoom Out">−</button>
@@ -62,125 +62,30 @@
             </div>
             <div class="flip-reset-group">
               <button type="button" id="flipBtn" class="pill-btn btn-sm" title="Flip Horizontally">Flip</button>
-              <button type="button" id="resetPhotoBtn" class="pill-btn btn-sm" title="Reset Photo Alignment">Reset</button>
+              <button type="button" id="resetPhotoBtn" class="pill-btn btn-sm" title="Reset Photo Position">Reset</button>
             </div>
           </div>
-          <div class="preview-hint">
-            <span class="hint-dot"></span> Drag inside hexagon or pinch/scroll to adjust photo
-          </div>
-        </div>
-
-        <!-- Reference Comparison Drawer / Modal (Visible when ?ref=1 or button clicked) -->
-        <div id="refCompareBox" class="ref-compare-panel" style="display: none;">
-          <div class="ref-compare-header">
-            <h3>Reference Comparison & Overlay Diff</h3>
-            <button type="button" id="closeRefBoxBtn" class="close-btn">&times;</button>
-          </div>
-          <div class="ref-compare-body">
-            <div class="compare-modes">
-              <button type="button" class="tab-btn active" data-tab="side-by-side">Side-by-Side</button>
-              <button type="button" class="tab-btn" data-tab="overlay">Overlay Slider</button>
-              <button type="button" class="tab-btn" data-tab="diff">Pixel Diff</button>
-            </div>
-            <div class="compare-view-container">
-              <div id="sideBySideView" class="compare-view active">
-                <div class="compare-col">
-                  <h4>Generated Badge (Code Canvas)</h4>
-                  <div class="img-frame"><img id="genPreviewImg" alt="Generated preview"></div>
-                </div>
-                <div class="compare-col">
-                  <h4>Reference Badge (badge-reference.png)</h4>
-                  <div class="img-frame"><img src="reference/badge-reference.png" alt="Reference Badge"></div>
-                </div>
-              </div>
-              <div id="overlayView" class="compare-view">
-                <div class="overlay-slider-wrap">
-                  <img src="reference/badge-reference.png" class="overlay-ref" alt="Reference">
-                  <div class="overlay-gen-mask" id="overlayGenMask">
-                    <img id="overlayGenImg" class="overlay-gen" alt="Generated">
-                  </div>
-                  <input type="range" id="overlaySlider" min="0" max="100" value="50" class="overlay-range" aria-label="Overlay Blend Slider">
-                </div>
-                <p class="overlay-help">Slide left/right to compare code alignment with reference.</p>
-              </div>
-              <div id="diffView" class="compare-view">
-                <canvas id="diffCanvas" width="1024" height="1536" class="diff-canvas"></canvas>
-                <div id="diffStats" class="diff-stats">Calculating diff...</div>
-              </div>
-            </div>
+          <div class="preview-hint" id="photoHint" style="display: none;">
+            <span class="hint-dot"></span> Drag photo inside hexagon or scroll/pinch to adjust
           </div>
         </div>
       </section>
 
-      <!-- Right Column: Form & Photo Editor -->
-      <section class="form-section" aria-label="Badge Customization Form">
+      <!-- Right Column: Only The Fields From The Image -->
+      <section class="form-section" aria-label="Badge Fields">
         <form id="badgeForm" class="badge-form" onsubmit="return false;">
-          <!-- Badge Type Segmented Control -->
-          <div class="form-group">
-            <label class="group-label">Badge Type <span class="required">*</span></label>
-            <div class="segmented-control" role="radiogroup" aria-label="Badge Type">
-              <label class="segment-option">
-                <input type="radio" name="badgeType" value="Participant" checked>
-                <span class="segment-pill">Participant</span>
-              </label>
-              <label class="segment-option">
-                <input type="radio" name="badgeType" value="Volunteer">
-                <span class="segment-pill">Volunteer</span>
-              </label>
-              <label class="segment-option">
-                <input type="radio" name="badgeType" value="Coordinator">
-                <span class="segment-pill">Coordinator</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Full Name -->
-          <div class="form-group">
-            <label for="fullNameInput" class="group-label">
-              Full Name <span class="required">*</span>
-              <span class="char-count" id="nameCount">0/40</span>
-            </label>
-            <input type="text" id="fullNameInput" class="text-input" placeholder="e.g. Ali Nawaz" maxlength="40" required autocomplete="name">
-            <span class="input-hint">Displayed in the large Name bar</span>
-          </div>
-
-          <!-- Team Name -->
-          <div class="form-group">
-            <label for="teamNameInput" class="group-label">
-              Team Name <span class="optional">(Optional)</span>
-              <span class="char-count" id="teamCount">0/30</span>
-            </label>
-            <input type="text" id="teamNameInput" class="text-input" placeholder="e.g. Cyber Knights" maxlength="30" autocomplete="off">
-            <span class="input-hint">Shown in Team bar and large watermark. Leave blank to hide Team bar.</span>
-          </div>
-
-          <!-- Role / Event / Segment Bar Content (Dynamic) -->
-          <div class="form-group" id="roleBarGroup">
-            <label id="roleBarLabel" class="group-label">
-              Event <span class="required">*</span>
-            </label>
-            
-            <!-- Chips Container for Participant / Volunteer -->
-            <div id="chipChoices" class="chips-grid"></div>
-
-            <!-- Custom / Coordinator Input Box -->
-            <div id="customRoleWrap" class="custom-role-wrap" style="display: none;">
-              <input type="text" id="customRoleInput" class="text-input" placeholder="Specify detail..." maxlength="35">
-            </div>
-          </div>
-
-          <!-- Photo Upload & Editor -->
+          
+          <!-- Field 1: Photo Upload -->
           <div class="form-group">
             <label class="group-label">
-              Photo <span class="required">*</span>
-              <span class="security-badge">🔒 Stays on your device</span>
+              Photo
+              <span class="security-badge">🔒 Stays on device</span>
             </label>
-            
             <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload photo">
               <input type="file" id="photoFileInput" accept="image/*" class="file-input-hidden">
               <div class="dropzone-content">
                 <div class="dropzone-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
@@ -188,25 +93,59 @@
                 </div>
                 <div class="dropzone-text">
                   <p class="dropzone-title"><strong>Click to upload</strong> or drag & drop</p>
-                  <p class="dropzone-sub">PNG, JPG, WebP (EXIF auto-rotated, kept full-res)</p>
+                  <p class="dropzone-sub">Fits hexagon frame • Kept full resolution</p>
                 </div>
-              </div>
-            </div>
-
-            <!-- Fine-tuning Sliders (collapsible or shown once photo loaded) -->
-            <div id="photoFineTuneWrap" class="fine-tune-box" style="display: none;">
-              <div class="tune-row">
-                <label for="panXSlider">Move Horizontal</label>
-                <input type="range" id="panXSlider" min="-100" max="100" value="0">
-              </div>
-              <div class="tune-row">
-                <label for="panYSlider">Move Vertical</label>
-                <input type="range" id="panYSlider" min="-100" max="100" value="0">
               </div>
             </div>
           </div>
 
-          <!-- Export Settings & Action Buttons -->
+          <!-- Field 2: Full Name -->
+          <div class="form-group">
+            <label for="fullNameInput" class="group-label">
+              Full Name <span class="required">*</span>
+              <span class="char-count" id="nameCount">14/40</span>
+            </label>
+            <input type="text" id="fullNameInput" class="text-input" value="Your Name Here" placeholder="Your Name Here" maxlength="40" required autocomplete="name">
+            <span class="input-hint">Shows in Name bar with person icon</span>
+          </div>
+
+          <!-- Field 3: Team Name -->
+          <div class="form-group">
+            <label for="teamNameInput" class="group-label">
+              Team Name
+              <span class="char-count" id="teamCount">14/30</span>
+            </label>
+            <input type="text" id="teamNameInput" class="text-input" value="Your Team Name" placeholder="Your Team Name" maxlength="30" autocomplete="off">
+            <span class="input-hint">Shows in Team bar and large watermark (TEAM / NAME)</span>
+          </div>
+
+          <!-- Field 4: Role -->
+          <div class="form-group">
+            <label for="roleInput" class="group-label">
+              Role <span class="required">*</span>
+              <span class="char-count" id="roleCount">14/35</span>
+            </label>
+            <input type="text" id="roleInput" class="text-input" value="Your Role Here" placeholder="Your Role Here" maxlength="35" required autocomplete="off">
+            <span class="input-hint">Shows in Role bar with briefcase icon</span>
+          </div>
+
+          <!-- Field 5: Badge Title (Bottom Text) -->
+          <div class="form-group">
+            <label for="badgeTitleInput" class="group-label">
+              Badge Title (Bottom) <span class="required">*</span>
+            </label>
+            <div class="title-input-row">
+              <input type="text" id="badgeTitleInput" class="text-input" value="VOLUNTEER" placeholder="VOLUNTEER" maxlength="20" required autocomplete="off">
+            </div>
+            <div class="quick-title-pills">
+              <button type="button" class="title-pill active" data-title="VOLUNTEER">VOLUNTEER</button>
+              <button type="button" class="title-pill" data-title="PARTICIPANT">PARTICIPANT</button>
+              <button type="button" class="title-pill" data-title="COORDINATOR">COORDINATOR</button>
+            </div>
+            <span class="input-hint">Large letter-spaced title centered at the bottom of the card</span>
+          </div>
+
+          <!-- Download Action Area -->
           <div class="export-box">
             <div class="export-options">
               <label class="checkbox-label">
@@ -216,50 +155,17 @@
               </label>
             </div>
 
-            <div class="action-buttons-wrap">
-              <button type="button" id="downloadPrimaryBtn" class="btn btn-primary btn-lg">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span class="btn-text-wrap">
-                  <span class="btn-title">Download HD Badge</span>
-                  <span class="btn-subtitle" id="downloadResolutionHint">3072 × 4608 px • Ultra HD</span>
-                </span>
-              </button>
-
-              <div class="secondary-actions">
-                <div class="scale-selector-wrap">
-                  <label for="scaleSelect" class="sr-only">Resolution Scale</label>
-                  <select id="scaleSelect" class="select-input">
-                    <option value="3" selected>Ultra HD (3× • 3072×4608)</option>
-                    <option value="2">HD (2× • 2048×3072)</option>
-                    <option value="1">Standard (1× • 1024×1536)</option>
-                  </select>
-                </div>
-
-                <button type="button" id="shareBtn" class="btn btn-secondary" title="Share badge">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="18" cy="5" r="3"/>
-                    <circle cx="6" cy="12" r="3"/>
-                    <circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                  </svg>
-                  <span>Share</span>
-                </button>
-              </div>
-
-              <!-- Social Caption Copy Box -->
-              <div class="caption-box">
-                <div class="caption-header">
-                  <span class="caption-label">Social Caption</span>
-                  <button type="button" id="copyCaptionBtn" class="pill-btn btn-sm">Copy Caption</button>
-                </div>
-                <p id="captionText" class="caption-content"></p>
-              </div>
-            </div>
+            <button type="button" id="downloadPrimaryBtn" class="btn btn-primary btn-lg">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span class="btn-text-wrap">
+                <span class="btn-title">Download HD Badge</span>
+                <span class="btn-subtitle">3072 × 4608 px • Ultra HD PNG</span>
+              </span>
+            </button>
           </div>
         </form>
       </section>
@@ -275,14 +181,13 @@
     <!-- Footer -->
     <footer class="app-footer">
       <p>TechnoFun 4.0 · The Shaikh Ayaz University, Shikarpur · 25 Nov 2026</p>
-      <p class="footer-privacy">Client-side generation • Photos are processed locally and never uploaded to any server.</p>
+      <p class="footer-privacy">Client-side generation • Photos are processed entirely on your device.</p>
     </footer>
 
-    <!-- Notification Toast (for errors & fallback notices) -->
+    <!-- Notification Toast -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
   <script src="app.js"></script>
 </body>
 </html>
-

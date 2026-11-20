@@ -630,8 +630,42 @@ body {
   box-shadow: 0 0 10px rgba(109, 74, 255, 0.3);
 }
 
-.custom-role-wrap {
-  margin-top: 8px;
+.title-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.quick-title-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.title-pill {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+}
+
+.title-pill:hover {
+  background: var(--bg-card-hover);
+  color: #fff;
+  border-color: var(--violet-primary);
+}
+
+.title-pill.active {
+  background: var(--violet-deep);
+  border-color: var(--violet-light);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(109, 74, 255, 0.35);
 }
 
 /* Dropzone */

@@ -1,6 +1,6 @@
 /**
  * TechnoFun 4.0 — ID Badge Generator
- * Matches reference/badge-reference.png in logical coordinates (1024 × 1536 px)
+ * Exactly reproduces the official reference design and fields.
  */
 
 'use strict';
@@ -12,30 +12,8 @@ const CONFIG = {
   eventName: "TechnoFun 4.0",
   date: "25 Nov 2026",
   venue: "The Shaikh Ayaz University, Shikarpur",
-  hashtags: ["#TechnoFun4", "#InnovateCompeteCelebrate", "#SAUShikarpur"], // TODO: confirm hashtags
-  events: [
-    "Programming Competition",
-    "Quiz Competition",
-    "Gaming",
-    "Exhibition"
-  ],
-  segments: [
-    "Registration & Help Desk", // TODO: confirm segments list
-    "Stage & Media",
-    "Technical Support",
-    "Discipline & Logistics",
-    "Guest Relations"
-  ],
-  coordinatorDefault: "Organizing Team",
-  exportScales: [
-    { label: "Ultra HD (3×)", scale: 3, width: 3072, height: 4608 },
-    { label: "HD (2×)", scale: 2, width: 2048, height: 3072 },
-    { label: "Standard (1×)", scale: 1, width: 1024, height: 1536 }
-  ],
-  showUniversitySeal: false, // Set to true to draw transparent seal at card bottom
-  universitySealPath: "assets/university-logo.png",
+  hashtags: ["#TechnoFun4", "#InnovateCompeteCelebrate", "#SAUShikarpur"],
   lanyardAssetPath: "assets/badge-lanyard.png",
-  sheetWebhook: "", // Optional Google Sheet webhook URL
   colors: {
     bg: "#0A0A0D",
     cardTop: "#0D0C14",
@@ -53,44 +31,34 @@ const CONFIG = {
     textGrey: "#7A7A85",
     footerGrey: "#6E6E75",
     watermark: "#1C1C20"
-  },
-  captions: {
-    Participant: "I'm participating in {detail} at TechnoFun 4.0 at {venue}! {hashtags}",
-    Volunteer: "I'm volunteering with the {detail} team at TechnoFun 4.0 at {venue}! {hashtags}",
-    Coordinator: "I'm coordinating TechnoFun 4.0 at {venue}! {hashtags}"
   }
 };
 
 // ==========================================
-// STATE
+// STATE — Matches reference image by default
 // ==========================================
 const state = {
-  badgeType: "Participant",
-  name: "",
-  team: "",
-  detail: CONFIG.events[0],
-  isCustomDetail: false,
-  photo: null,
-  photoSource: null, // Image or ImageBitmap
+  name: "Your Name Here",
+  team: "Your Team Name",
+  role: "Your Role Here",
+  badgeTitle: "VOLUNTEER",
+  photoSource: null,
   photoNaturalWidth: 0,
   photoNaturalHeight: 0,
   photoTransform: {
-    zoom: 1.0,   // 1.0 = minimum cover of hexagon (100%), up to 5.0 (500%)
-    panX: 0,     // logical px offset from center
-    panY: 0,     // logical px offset from center
+    zoom: 1.0,
+    panX: 0,
+    panY: 0,
     flipH: false
   },
   cardOnly: false,
-  refMode: false,
   debugMode: false,
   scale: 3,
   lanyardImg: null,
-  sealImg: null,
-  referenceImg: null,
   fontsLoaded: false
 };
 
-// Layout constants in logical coordinate space (1024 × 1536)
+// Logical Coordinate Space (1024 × 1536)
 const LAYOUT = {
   width: 1024,
   height: 1536,
@@ -125,14 +93,13 @@ const dropzone = document.getElementById('dropzone');
 const photoFileInput = document.getElementById('photoFileInput');
 const fullNameInput = document.getElementById('fullNameInput');
 const teamNameInput = document.getElementById('teamNameInput');
+const roleInput = document.getElementById('roleInput');
+const badgeTitleInput = document.getElementById('badgeTitleInput');
 const nameCount = document.getElementById('nameCount');
 const teamCount = document.getElementById('teamCount');
-const roleBarLabel = document.getElementById('roleBarLabel');
-const chipChoices = document.getElementById('chipChoices');
-const customRoleWrap = document.getElementById('customRoleWrap');
-const customRoleInput = document.getElementById('customRoleInput');
-const photoFineTuneWrap = document.getElementById('photoFineTuneWrap');
+const roleCount = document.getElementById('roleCount');
 const photoQuickBar = document.getElementById('photoQuickBar');
+const photoHint = document.getElementById('photoHint');
 const zoomSlider = document.getElementById('zoomSlider');
 const zoomVal = document.getElementById('zoomVal');
 const zoomInBtn = document.getElementById('zoomInBtn');
@@ -144,27 +111,13 @@ const nudgeRight = document.getElementById('nudgeRight');
 const nudgeReset = document.getElementById('nudgeReset');
 const flipBtn = document.getElementById('flipBtn');
 const resetPhotoBtn = document.getElementById('resetPhotoBtn');
-const panXSlider = document.getElementById('panXSlider');
-const panYSlider = document.getElementById('panYSlider');
 const cardOnlyCheck = document.getElementById('cardOnlyCheck');
-const scaleSelect = document.getElementById('scaleSelect');
 const downloadPrimaryBtn = document.getElementById('downloadPrimaryBtn');
 const mobileDownloadBtn = document.getElementById('mobileDownloadBtn');
-const downloadResolutionHint = document.getElementById('downloadResolutionHint');
-const shareBtn = document.getElementById('shareBtn');
-const copyCaptionBtn = document.getElementById('copyCaptionBtn');
-const captionText = document.getElementById('captionText');
 const toast = document.getElementById('toast');
-const refModeBtn = document.getElementById('refModeBtn');
 const debugModeBtn = document.getElementById('debugModeBtn');
-const refCompareBox = document.getElementById('refCompareBox');
-const closeRefBoxBtn = document.getElementById('closeRefBoxBtn');
-const genPreviewImg = document.getElementById('genPreviewImg');
-const overlayGenImg = document.getElementById('overlayGenImg');
-const overlayGenMask = document.getElementById('overlayGenMask');
-const overlaySlider = document.getElementById('overlaySlider');
-const diffCanvas = document.getElementById('diffCanvas');
-const diffStats = document.getElementById('diffStats');
+const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
+const titlePills = document.querySelectorAll('.title-pill');
 
 // ==========================================
 // INITIALIZATION
@@ -174,67 +127,23 @@ async function init() {
   setupEventListeners();
   loadAssets();
   await loadFonts();
-  renderChips();
-  updateCaption();
   renderPreview();
 }
 
 function parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('ref') === '1') {
-    state.refMode = true;
-    refModeBtn.classList.add('active');
-    setReferenceModeData();
-    refCompareBox.style.display = 'block';
-  }
   if (params.get('debug') === '1') {
     state.debugMode = true;
     debugModeBtn.classList.add('active');
   }
 }
 
-function setReferenceModeData() {
-  state.badgeType = "Volunteer";
-  state.name = "Your Name Here";
-  state.team = "Your Team Name";
-  state.detail = "Your Role Here";
-  state.isCustomDetail = true;
-  state.photo = null; // show placeholder silhouette
-  
-  // Update inputs
-  fullNameInput.value = state.name;
-  teamNameInput.value = state.team;
-  document.querySelector(`input[name="badgeType"][value="Volunteer"]`).checked = true;
-  updateCounts();
-}
-
 function loadAssets() {
-  // Lanyard asset
   const lanyard = new Image();
   lanyard.src = CONFIG.lanyardAssetPath;
   lanyard.onload = () => {
     state.lanyardImg = lanyard;
     renderPreview();
-  };
-
-  // Optional university seal
-  if (CONFIG.showUniversitySeal) {
-    const seal = new Image();
-    seal.src = CONFIG.universitySealPath;
-    seal.onload = () => {
-      state.sealImg = seal;
-      renderPreview();
-    };
-  }
-
-  // Reference image for diff
-  const refImg = new Image();
-  refImg.src = "reference/badge-reference.png";
-  refImg.onload = () => {
-    state.referenceImg = refImg;
-    if (state.refMode) {
-      updateDiff();
-    }
   };
 }
 
@@ -242,21 +151,21 @@ async function loadFonts() {
   try {
     await Promise.all([
       document.fonts.load('800 italic 54px Poppins'),
-      document.fonts.load('700 48px Poppins'),
-      document.fonts.load('600 30px Poppins'),
+      document.fonts.load('700 52px Poppins'),
+      document.fonts.load('600 38px Poppins'),
       document.fonts.load('300 56px Poppins'),
       document.fonts.load('180px Anton'),
-      document.fonts.load('500 15px Inter')
+      document.fonts.load('500 13px Inter')
     ]);
     state.fontsLoaded = true;
   } catch (e) {
-    console.warn("Google fonts failed to load; using system fallbacks", e);
+    console.warn("Fonts loading fallback", e);
     state.fontsLoaded = true;
   }
 }
 
 // ==========================================
-// BADGE RENDERER (Logical: 1024 × 1536)
+// BADGE RENDERER (1024 × 1536 Logical Space)
 // ==========================================
 function drawBadge(targetCtx, s, options = {}) {
   const exportScale = options.scale || 1;
@@ -279,11 +188,11 @@ function drawBadge(targetCtx, s, options = {}) {
     // Subtle darker diagonal background panels in corners
     drawDiagonalBgPanels(targetCtx);
 
-    // Lanyard and Metal Clip (drawn behind card and over top)
+    // Lanyard Strap (behind card)
     drawLanyardAndClip(targetCtx, s);
   }
 
-  // 2. Card Shadow (only if not cardOnly)
+  // 2. Card Drop Shadow
   if (!isCardOnly) {
     targetCtx.save();
     targetCtx.shadowColor = "rgba(0, 0, 0, 0.7)";
@@ -295,7 +204,7 @@ function drawBadge(targetCtx, s, options = {}) {
     targetCtx.restore();
   }
 
-  // 3. Card Body & Clip Mask
+  // 3. Card Body & Inner Content (clipped)
   targetCtx.save();
   roundRectPath(targetCtx, LAYOUT.card.x, LAYOUT.card.y, LAYOUT.card.w, LAYOUT.card.h, LAYOUT.card.r);
   targetCtx.clip();
@@ -329,10 +238,10 @@ function drawBadge(targetCtx, s, options = {}) {
   // Field Bars (Name, Team, Role)
   drawFieldBars(targetCtx, s);
 
-  // Bottom Label ("VOLUNTEER" / "PARTICIPANT" / "COORDINATOR"), Flank Lines & Footer
+  // Bottom Label ("VOLUNTEER" / custom title), Flank Lines & Footer
   drawBottomSection(targetCtx, s);
 
-  // Glass edge inner highlight
+  // Glass edge top sheen
   drawGlassEdgeHighlight(targetCtx);
 
   targetCtx.restore(); // Restore card clip
@@ -361,10 +270,6 @@ function drawBadge(targetCtx, s, options = {}) {
   targetCtx.restore();
 }
 
-// ==========================================
-// DETAILED CANVAS DRAWING FUNCTIONS
-// ==========================================
-
 function roundRectPath(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -383,7 +288,6 @@ function drawDiagonalBgPanels(ctx) {
   ctx.save();
   ctx.fillStyle = "rgba(18, 18, 24, 0.45)";
   
-  // Top-left diagonal panel
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(260, 0);
@@ -391,7 +295,6 @@ function drawDiagonalBgPanels(ctx) {
   ctx.closePath();
   ctx.fill();
 
-  // Bottom-right diagonal panel
   ctx.beginPath();
   ctx.moveTo(LAYOUT.width, LAYOUT.height - 300);
   ctx.lineTo(LAYOUT.width, LAYOUT.height);
@@ -403,13 +306,12 @@ function drawDiagonalBgPanels(ctx) {
 }
 
 function drawLanyardAndClip(ctx, s) {
-  // If lanyard image asset loaded, draw it directly
   if (s.lanyardImg && s.lanyardImg.complete) {
     ctx.drawImage(s.lanyardImg, LAYOUT.lanyard.x, LAYOUT.lanyard.y, LAYOUT.lanyard.w, LAYOUT.lanyard.h);
     return;
   }
 
-  // Procedural fallback for Lanyard Strap
+  // Procedural fallback strap
   ctx.save();
   const strapGrad = ctx.createLinearGradient(418, 0, 606, 0);
   strapGrad.addColorStop(0, "#121215");
@@ -418,7 +320,6 @@ function drawLanyardAndClip(ctx, s) {
   ctx.fillStyle = strapGrad;
   ctx.fillRect(418, 0, 188, 160);
 
-  // Subtle woven vertical lines
   ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
   ctx.lineWidth = 1;
   for (let x = 422; x < 606; x += 4) {
@@ -431,10 +332,9 @@ function drawLanyardAndClip(ctx, s) {
 }
 
 function drawLanyardFront(ctx, s) {
-  // If lanyard asset is already drawn in step 1, skip procedural clip
   if (s.lanyardImg && s.lanyardImg.complete) return;
 
-  // Procedural Metal Clip
+  // Procedural Clip
   ctx.save();
   const clipX = 396;
   const clipY = 128;
@@ -442,7 +342,6 @@ function drawLanyardFront(ctx, s) {
   const clipH = 89;
   const r = 16;
 
-  // Clip body
   roundRectPath(ctx, clipX, clipY, clipW, clipH, r);
   const clipGrad = ctx.createLinearGradient(0, clipY, 0, clipY + clipH);
   clipGrad.addColorStop(0, "#888892");
@@ -456,7 +355,6 @@ function drawLanyardFront(ctx, s) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Inner slot (horizontal pill)
   roundRectPath(ctx, 457, 155, 110, 26, 13);
   ctx.fillStyle = "#0A0A0D";
   ctx.fill();
@@ -470,7 +368,7 @@ function drawLanyardFront(ctx, s) {
 function drawCardAccents(ctx) {
   ctx.save();
 
-  // 1. Top-Left Violet Accent Band
+  // Top-Left Violet Accent Band
   ctx.beginPath();
   ctx.moveTo(LAYOUT.card.x, LAYOUT.card.y);
   ctx.lineTo(LAYOUT.card.x + 220, LAYOUT.card.y);
@@ -483,7 +381,7 @@ function drawCardAccents(ctx) {
   ctx.fillStyle = tlGrad;
   ctx.fill();
 
-  // 2. Left-Edge Accent Panel (y=710..870)
+  // Left-Edge Accent Panel (y=710..870)
   ctx.beginPath();
   ctx.moveTo(LAYOUT.card.x, 720);
   ctx.lineTo(LAYOUT.card.x + 40, 750);
@@ -499,7 +397,7 @@ function drawCardAccents(ctx) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // 3. Right-Edge Glowing Panel (y=770..905)
+  // Right-Edge Glowing Panel (y=770..905)
   ctx.beginPath();
   ctx.moveTo(LAYOUT.card.x + LAYOUT.card.w, 770);
   ctx.lineTo(LAYOUT.card.x + LAYOUT.card.w - 45, 800);
@@ -512,7 +410,7 @@ function drawCardAccents(ctx) {
   ctx.fillStyle = rightGrad;
   ctx.fill();
 
-  // 4. Lower-Right Diagonal Stripe (y=1090..1200)
+  // Lower-Right Diagonal Stripe (y=1090..1200)
   ctx.beginPath();
   ctx.moveTo(LAYOUT.card.x + LAYOUT.card.w, 1090);
   ctx.lineTo(LAYOUT.card.x + LAYOUT.card.w - 120, 1200);
@@ -520,7 +418,7 @@ function drawCardAccents(ctx) {
   ctx.lineWidth = 3.5;
   ctx.stroke();
 
-  // 5. Bottom-Right Corner Accent (y=1270..1445)
+  // Bottom-Right Corner Accent (y=1270..1445)
   ctx.beginPath();
   ctx.moveTo(LAYOUT.card.x + LAYOUT.card.w, 1290);
   ctx.lineTo(LAYOUT.card.x + LAYOUT.card.w - 180, LAYOUT.card.y + LAYOUT.card.h);
@@ -540,7 +438,7 @@ function drawWaveContourLines(ctx) {
   ctx.strokeStyle = "rgba(130, 110, 240, 0.14)";
   ctx.lineWidth = 1.2;
 
-  // Top-Right concentric contour arcs (x: 640..950, y: 120..320)
+  // Top-Right concentric arcs
   for (let i = 0; i < 5; i++) {
     const offset = i * 28;
     ctx.beginPath();
@@ -549,7 +447,7 @@ function drawWaveContourLines(ctx) {
     ctx.stroke();
   }
 
-  // Bottom-Left concentric contour arcs (x: 75..260, y: 1180..1330)
+  // Bottom-Left concentric arcs
   for (let i = 0; i < 4; i++) {
     const offset = i * 24;
     ctx.beginPath();
@@ -558,12 +456,11 @@ function drawWaveContourLines(ctx) {
     ctx.stroke();
   }
 
-  // Circuit trace details near hexagon bottom left & right
+  // Circuit trace details
   ctx.strokeStyle = "rgba(109, 74, 255, 0.25)";
   ctx.fillStyle = "rgba(157, 123, 255, 0.5)";
   ctx.lineWidth = 1.2;
 
-  // Left circuit trace
   ctx.beginPath();
   ctx.moveTo(270, 750);
   ctx.lineTo(315, 750);
@@ -573,7 +470,6 @@ function drawWaveContourLines(ctx) {
   ctx.arc(270, 750, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Right circuit trace
   ctx.beginPath();
   ctx.moveTo(755, 750);
   ctx.lineTo(710, 750);
@@ -590,10 +486,10 @@ function drawWordmark(ctx) {
   ctx.save();
 
   const startX = 94;
-  const baselineY = 245;
+  const baselineY = 236;
 
   // 1. "Techno" in heavy italic sans with white-to-silver gradient
-  ctx.font = "italic 800 54px Poppins, sans-serif";
+  ctx.font = "italic 800 58px Poppins, sans-serif";
   const technoGrad = ctx.createLinearGradient(0, baselineY - 45, 0, baselineY);
   technoGrad.addColorStop(0, "#FFFFFF");
   technoGrad.addColorStop(1, "#B4B4BC");
@@ -607,27 +503,26 @@ function drawWordmark(ctx) {
   funGrad.addColorStop(1, "#5F36FF");
   ctx.fillStyle = funGrad;
   ctx.fillText("Fun", startX + technoWidth, baselineY);
-  const funWidth = ctx.measureText("Fun").width;
 
-  // 3. "4.0" smaller italic white
-  ctx.font = "italic 700 26px Poppins, sans-serif";
+  // 3. "4.0" placed below "Fun" at lower right
+  ctx.font = "italic 800 36px Poppins, sans-serif";
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillText("4.0", startX + technoWidth + funWidth + 8, baselineY);
+  ctx.fillText("4.0", 418, 268);
 
   // 4. Orbit arc above "Techno"
   ctx.beginPath();
-  ctx.moveTo(startX + 8, baselineY - 32);
-  ctx.quadraticCurveTo(startX + 75, baselineY - 76, startX + 130, baselineY - 76);
-  ctx.strokeStyle = "rgba(167, 133, 255, 0.75)";
-  ctx.lineWidth = 2.2;
+  ctx.moveTo(145, 200);
+  ctx.quadraticCurveTo(230, 155, 345, 172);
+  ctx.strokeStyle = "rgba(167, 133, 255, 0.85)";
+  ctx.lineWidth = 2.4;
   ctx.stroke();
 
   // 5. Four-point sparkle star at orbit end
-  drawSparkleStar(ctx, startX + 130, baselineY - 76, 9, 3.5, "#D6C2FF");
+  drawSparkleStar(ctx, 345, 172, 9, 3.5, "#D6C2FF");
 
   // 6. Subtitle "Innovate • Compete • Celebrate"
-  const subY = 328;
-  ctx.font = "500 15px Inter, Poppins, sans-serif";
+  const subY = 276;
+  ctx.font = "500 13px Inter, Poppins, sans-serif";
   ctx.fillStyle = "#E0E0E6";
   
   const part1 = "Innovate";
@@ -681,11 +576,9 @@ function drawTopRightTagline(ctx) {
 
   // Vertical violet accent line
   const lineX = 692;
-  const lineY1 = 162;
-  const lineY2 = 258;
   ctx.beginPath();
-  ctx.moveTo(lineX, lineY1);
-  ctx.lineTo(lineX, lineY2);
+  ctx.moveTo(lineX, 162);
+  ctx.lineTo(lineX, 258);
   ctx.strokeStyle = "#6E48FF";
   ctx.lineWidth = 4;
   ctx.lineCap = "round";
@@ -709,12 +602,15 @@ function drawTopRightTagline(ctx) {
 function drawWatermark(ctx, s) {
   ctx.save();
 
-  let leftWord = "";
-  let rightWord = "";
+  let leftWord = "TEAM";
+  let rightWord = "NAME";
 
   const teamInput = (s.team || "").trim().toUpperCase();
 
-  if (!teamInput) {
+  if (teamInput === "YOUR TEAM NAME") {
+    leftWord = "TEAM";
+    rightWord = "NAME";
+  } else if (!teamInput) {
     leftWord = "TECHNO";
     rightWord = "FUN";
   } else {
@@ -723,7 +619,6 @@ function drawWatermark(ctx, s) {
       leftWord = words[0];
       rightWord = words.slice(1).join(" ");
     } else {
-      // Single word split by characters
       const w = words[0];
       const mid = Math.ceil(w.length / 2);
       leftWord = w.slice(0, mid);
@@ -731,17 +626,15 @@ function drawWatermark(ctx, s) {
     }
   }
 
-  // Watermark text styling
   ctx.font = "180px Anton, Impact, sans-serif";
-  ctx.fillStyle = CONFIG.colors.watermark; // #1C1C20
+  ctx.fillStyle = CONFIG.colors.watermark;
   ctx.textBaseline = "middle";
 
-  const maxSideWidth = 240; // Max available horizontal room
-  const leftTargetX = 328;  // Ends tucking behind hexagon left (x=337)
-  const rightTargetX = 696; // Starts behind hexagon right (x=687)
+  const maxSideWidth = 240;
+  const leftTargetX = 328;
+  const rightTargetX = 696;
   const centerY = 642;
 
-  // Auto-fit font size so both words fit their side width
   let fontSize = 180;
   ctx.font = `${fontSize}px Anton, Impact, sans-serif`;
   let wLeft = ctx.measureText(leftWord).width;
@@ -750,15 +643,13 @@ function drawWatermark(ctx, s) {
 
   if (maxW > maxSideWidth) {
     fontSize = Math.floor(fontSize * (maxSideWidth / maxW));
-    fontSize = Math.max(48, fontSize); // prevent vanishing
+    fontSize = Math.max(48, fontSize);
     ctx.font = `${fontSize}px Anton, Impact, sans-serif`;
   }
 
-  // Left word (right-aligned against left edge of hexagon)
   ctx.textAlign = "right";
   ctx.fillText(leftWord, leftTargetX, centerY);
 
-  // Right word (left-aligned starting at right edge of hexagon)
   ctx.textAlign = "left";
   ctx.fillText(rightWord, rightTargetX, centerY);
 
@@ -791,7 +682,7 @@ function drawHexagonFrame(ctx, s) {
   ctx.shadowBlur = 12;
   ctx.stroke();
 
-  // Inner Border (2px #8B6BF9) with 4px gap
+  // Inner Border (2px #8B6BF9)
   ctx.save();
   ctx.translate(hex.cx, hex.cy);
   ctx.scale(0.965, 0.965);
@@ -803,18 +694,16 @@ function drawHexagonFrame(ctx, s) {
   ctx.stroke();
   ctx.restore();
 
-  // Bevel Highlights on top-left and bottom-right edges
+  // Bevel Highlights
   ctx.lineWidth = 3;
   ctx.strokeStyle = "rgba(235, 225, 255, 0.75)";
   ctx.lineCap = "round";
 
-  // Top-left bevel highlight
   ctx.beginPath();
   ctx.moveTo(hex.vertices[5].x, hex.vertices[5].y);
   ctx.lineTo(hex.vertices[0].x, hex.vertices[0].y);
   ctx.stroke();
 
-  // Bottom-right bevel highlight
   ctx.beginPath();
   ctx.moveTo(hex.vertices[2].x, hex.vertices[2].y);
   ctx.lineTo(hex.vertices[3].x, hex.vertices[3].y);
@@ -833,19 +722,17 @@ function buildHexagonPath(ctx, verts) {
 }
 
 function drawPlaceholderSilhouette(ctx, hex) {
-  // Light grey background
   ctx.fillStyle = "#B8B8BA";
   ctx.fillRect(hex.cx - hex.w / 2, hex.cy - hex.h / 2, hex.w, hex.h);
 
-  // Dark grey silhouette (#424245)
   ctx.fillStyle = "#424245";
 
-  // Head (circle)
+  // Head
   ctx.beginPath();
   ctx.arc(hex.cx, hex.cy - 68, 38, 0, Math.PI * 2);
   ctx.fill();
 
-  // Shoulders & Torso (smooth expanding trapezoid / arc)
+  // Shoulders & Torso
   ctx.beginPath();
   ctx.moveTo(hex.cx - 30, hex.cy - 20);
   ctx.bezierCurveTo(hex.cx - 85, hex.cy + 10, hex.cx - 120, hex.cy + 80, hex.cx - 130, hex.cy + 150);
@@ -860,7 +747,6 @@ function drawUserPhoto(ctx, s, hex) {
   const nw = s.photoNaturalWidth || img.width;
   const nh = s.photoNaturalHeight || img.height;
 
-  // Base scale required to fully cover the hexagon bounding box (w: 350, h: 360)
   const baseScale = Math.max(hex.w / nw, hex.h / nh);
   const zoom = Math.max(1.0, Math.min(5.0, s.photoTransform.zoom || 1.0));
   const finalScale = baseScale * zoom;
@@ -868,7 +754,6 @@ function drawUserPhoto(ctx, s, hex) {
   const dispW = nw * finalScale;
   const dispH = nh * finalScale;
 
-  // Clamp pan so image never leaves any gap inside the hexagon
   const maxPanX = Math.max(0, (dispW - hex.w) / 2);
   const maxPanY = Math.max(0, (dispH - hex.h) / 2);
 
@@ -899,8 +784,8 @@ function drawFieldBars(ctx, s) {
   ctx.lineTo(240, 984);
   ctx.stroke();
 
-  // Name text: auto-fit font size if long
-  const rawName = (s.name || "").trim() || (s.refMode ? "Your Name Here" : "Your Name Here");
+  // Name text
+  const rawName = (s.name || "").trim() || "Your Name Here";
   drawAutoFitText(ctx, {
     text: rawName,
     startX: 260,
@@ -913,7 +798,7 @@ function drawFieldBars(ctx, s) {
     color: "#FFFFFF"
   });
 
-  // 2. Team Bar (Optional - hidden if empty)
+  // 2. Team Bar (Shows if team is present, collapses if empty)
   let roleBarPos = LAYOUT.roleBarNormal;
 
   if (hasTeam) {
@@ -946,11 +831,10 @@ function drawFieldBars(ctx, s) {
       color: "#FFFFFF"
     });
   } else {
-    // When Team is empty, Role Bar shifts up to close the gap
     roleBarPos = LAYOUT.roleBarShifted;
   }
 
-  // 3. Role Bar (Dynamic content based on Badge Type)
+  // 3. Role Bar
   drawHexagonalBar(ctx, roleBarPos, "#5F3DDB", "#08080A");
   drawBriefcaseIcon(ctx, 230, roleBarPos.y + roleBarPos.h / 2, "#CCCCCC");
 
@@ -962,19 +846,15 @@ function drawFieldBars(ctx, s) {
   ctx.lineTo(268, roleBarPos.y + roleBarPos.h - 13);
   ctx.stroke();
 
-  // Label based on badge type
-  let roleLabel = "Role:";
-  if (s.badgeType === "Participant") roleLabel = "Event:";
-  else if (s.badgeType === "Volunteer") roleLabel = "Segment:";
-
+  // Label "Role:"
   ctx.font = "600 18px Poppins, sans-serif";
   ctx.fillStyle = "#9E7BFF";
-  ctx.fillText(roleLabel, 290, roleBarPos.y + 33);
+  ctx.fillText("Role:", 290, roleBarPos.y + 33);
 
-  // Role / Event / Segment Value
-  let roleVal = (s.detail || "").trim() || (s.refMode ? "Your Role Here" : "Your Role Here");
+  // Value "Your Role Here"
+  const rawRole = (s.role || "").trim() || "Your Role Here";
   drawAutoFitText(ctx, {
-    text: roleVal,
+    text: rawRole,
     startX: 290,
     baselineY: roleBarPos.y + 71,
     maxWidth: 520,
@@ -1033,25 +913,19 @@ function drawAutoFitText(ctx, opts) {
   ctx.restore();
 }
 
-// Vector Icon Paths in Canvas
 function drawPersonIcon(ctx, cx, cy, color) {
   ctx.save();
   ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-
-  // Head
   ctx.beginPath();
   ctx.arc(cx, cy - 14, 11, 0, Math.PI * 2);
   ctx.fill();
 
-  // Torso
   ctx.beginPath();
   ctx.moveTo(cx - 18, cy + 18);
   ctx.bezierCurveTo(cx - 18, cy + 2, cx - 10, cy - 1, cx, cy - 1);
   ctx.bezierCurveTo(cx + 10, cy - 1, cx + 18, cy + 2, cx + 18, cy + 18);
   ctx.closePath();
   ctx.fill();
-
   ctx.restore();
 }
 
@@ -1059,7 +933,6 @@ function drawPeopleIcon(ctx, cx, cy, color) {
   ctx.save();
   ctx.fillStyle = color;
 
-  // Center person
   ctx.beginPath();
   ctx.arc(cx, cy - 11, 8, 0, Math.PI * 2);
   ctx.fill();
@@ -1071,7 +944,6 @@ function drawPeopleIcon(ctx, cx, cy, color) {
   ctx.closePath();
   ctx.fill();
 
-  // Left flanking person
   ctx.beginPath();
   ctx.arc(cx - 16, cy - 8, 6, 0, Math.PI * 2);
   ctx.fill();
@@ -1083,7 +955,6 @@ function drawPeopleIcon(ctx, cx, cy, color) {
   ctx.closePath();
   ctx.fill();
 
-  // Right flanking person
   ctx.beginPath();
   ctx.arc(cx + 16, cy - 8, 6, 0, Math.PI * 2);
   ctx.fill();
@@ -1104,21 +975,17 @@ function drawBriefcaseIcon(ctx, cx, cy, color) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2.0;
 
-  // Handle
   ctx.beginPath();
   ctx.roundRect(cx - 10, cy - 16, 20, 10, 4);
   ctx.stroke();
 
-  // Bag Body
   ctx.beginPath();
   ctx.roundRect(cx - 19, cy - 8, 38, 24, 4);
   ctx.fill();
 
-  // Middle horizontal line / clasp
   ctx.fillStyle = "#08080A";
   ctx.fillRect(cx - 19, cy + 1, 38, 2);
 
-  // Clasp buckle
   ctx.fillStyle = color;
   ctx.fillRect(cx - 3, cy - 1, 6, 6);
 
@@ -1128,38 +995,34 @@ function drawBriefcaseIcon(ctx, cx, cy, color) {
 function drawBottomSection(ctx, s) {
   ctx.save();
 
-  // Badge Type Label ("VOLUNTEER" / "PARTICIPANT" / "COORDINATOR")
-  const typeText = (s.badgeType || "VOLUNTEER").toUpperCase();
+  const titleText = (s.badgeTitle || "VOLUNTEER").trim().toUpperCase();
   ctx.font = "300 56px Poppins, sans-serif";
   ctx.fillStyle = "#E2E2E6";
   ctx.textAlign = "center";
   
-  // Custom letter spacing support for canvas
   if (ctx.letterSpacing !== undefined) {
     ctx.letterSpacing = "22px";
-    ctx.fillText(typeText, 512, LAYOUT.volunteerY);
+    ctx.fillText(titleText, 512, LAYOUT.volunteerY);
     ctx.letterSpacing = "0px";
   } else {
-    drawLetterSpacedText(ctx, typeText, 512, LAYOUT.volunteerY, 22);
+    drawLetterSpacedText(ctx, titleText, 512, LAYOUT.volunteerY, 22);
   }
 
-  // Flanking horizontal violet accent lines
+  // Flanking horizontal lines
   ctx.strokeStyle = "#7954F0";
   ctx.lineWidth = 2.0;
 
-  // Left line: x 178 to 269
   ctx.beginPath();
   ctx.moveTo(178, 1332);
   ctx.lineTo(269, 1332);
   ctx.stroke();
 
-  // Right line: x 755 to 846
   ctx.beginPath();
   ctx.moveTo(755, 1332);
   ctx.lineTo(846, 1332);
   ctx.stroke();
 
-  // Footer text "TechnoFun 4.0"
+  // Footer text
   ctx.font = "500 20px Poppins, sans-serif";
   ctx.fillStyle = "#6E6E75";
   ctx.textAlign = "center";
@@ -1169,11 +1032,6 @@ function drawBottomSection(ctx, s) {
     ctx.letterSpacing = "0px";
   } else {
     drawLetterSpacedText(ctx, "TechnoFun 4.0", 512, LAYOUT.footerY, 5);
-  }
-
-  // Optional University Seal
-  if (CONFIG.showUniversitySeal && s.sealImg && s.sealImg.complete) {
-    ctx.drawImage(s.sealImg, 512 - 25, 1405, 50, 50);
   }
 
   ctx.restore();
@@ -1193,7 +1051,6 @@ function drawLetterSpacedText(ctx, text, cx, y, spacing) {
 
 function drawGlassEdgeHighlight(ctx) {
   ctx.save();
-  // Subtle top-edge glass sheen
   const sheen = ctx.createLinearGradient(LAYOUT.card.x, LAYOUT.card.y, LAYOUT.card.x + LAYOUT.card.w, LAYOUT.card.y);
   sheen.addColorStop(0, "rgba(255, 255, 255, 0)");
   sheen.addColorStop(0.2, "rgba(255, 255, 255, 0.12)");
@@ -1219,7 +1076,7 @@ function drawDebugOutlines(ctx, s) {
     { name: "ROLE BAR", box: [LAYOUT.roleBarNormal.x, LAYOUT.roleBarNormal.y, LAYOUT.roleBarNormal.w, LAYOUT.roleBarNormal.h], color: "#FFAA00" },
     { name: "WATERMARK L", box: [80, 540, 258, 189], color: "#FF4444" },
     { name: "WATERMARK R", box: [686, 540, 256, 189], color: "#FF4444" },
-    { name: "VOLUNTEER", box: [178, 1300, 668, 50], color: "#44FF88" }
+    { name: "BOTTOM TITLE", box: [178, 1300, 668, 50], color: "#44FF88" }
   ];
 
   boxes.forEach(b => {
@@ -1246,10 +1103,6 @@ function renderPreview() {
   }
 
   drawBadge(ctx, state, { scale: dpr });
-
-  if (state.refMode) {
-    updateRefPreview();
-  }
 }
 
 async function renderExportBlob(exportScale, cardOnly) {
@@ -1275,16 +1128,13 @@ async function renderExportBlob(exportScale, cardOnly) {
 // ==========================================
 // EXPORT & DOWNLOAD WORKFLOW
 // ==========================================
-async function handleDownload(scaleVal) {
-  const requestedScale = parseInt(scaleVal, 10) || state.scale || 3;
-  showToast(`Generating badge at ${requestedScale}× resolution...`);
+async function handleDownload() {
+  const requestedScale = 3;
+  showToast("Rendering Ultra HD badge (3072 × 4608 px)...");
 
-  const scalesToTry = [requestedScale];
-  if (requestedScale === 3) scalesToTry.push(2, 1);
-  else if (requestedScale === 2) scalesToTry.push(1);
-
+  const scalesToTry = [3, 2, 1];
   let successBlob = null;
-  let finalScale = requestedScale;
+  let finalScale = 3;
 
   for (const s of scalesToTry) {
     try {
@@ -1300,15 +1150,13 @@ async function handleDownload(scaleVal) {
   }
 
   if (!successBlob) {
-    showToast("Error generating badge export. Please try a lower resolution.", 4000);
+    showToast("Error generating badge export. Please try again.", 4000);
     return;
   }
 
-  // Generate clean filename
   const cleanName = (state.name || "Badge").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
   const fileName = `TechnoFun-4.0-Badge-${cleanName}.png`;
 
-  // Trigger download
   const url = URL.createObjectURL(successBlob);
   const a = document.createElement('a');
   a.href = url;
@@ -1319,61 +1167,7 @@ async function handleDownload(scaleVal) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 
   const scaleNames = { 3: "Ultra HD (3072 × 4608 px)", 2: "HD (2048 × 3072 px)", 1: "Standard (1024 × 1536 px)" };
-  showToast(`Downloaded: ${scaleNames[finalScale] || finalScale + '×'}`);
-
-  // Optional Webhook POST
-  triggerWebhook();
-}
-
-function triggerWebhook() {
-  if (!CONFIG.sheetWebhook) return;
-  try {
-    fetch(CONFIG.sheetWebhook, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: state.name,
-        team: state.team,
-        type: state.badgeType,
-        detail: state.detail,
-        timestamp: new Date().toISOString()
-      })
-    }).catch(e => console.log("Webhook skipped or failed silently", e));
-  } catch (e) {
-    // Failure must never block download
-  }
-}
-
-async function handleShare() {
-  if (!navigator.share) {
-    showToast("Web Share not supported on this browser. Use Download instead.");
-    return;
-  }
-
-  try {
-    const blob = await renderExportBlob(2, state.cardOnly);
-    if (!blob) throw new Error("Could not create share image");
-    const file = new File([blob], `TechnoFun-4.0-Badge.png`, { type: "image/png" });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: "My TechnoFun 4.0 Badge",
-        text: captionText.innerText,
-        files: [file]
-      });
-      showToast("Shared successfully!");
-    } else {
-      await navigator.share({
-        title: "My TechnoFun 4.0 Badge",
-        text: captionText.innerText
-      });
-    }
-  } catch (err) {
-    if (err.name !== "AbortError") {
-      showToast("Share cancelled or failed");
-    }
-  }
+  showToast(`Downloaded: ${scaleNames[finalScale]}`);
 }
 
 // ==========================================
@@ -1388,12 +1182,11 @@ async function handlePhotoFile(file) {
   try {
     let imageSource = null;
 
-    // Honor EXIF orientation via createImageBitmap
     if (window.createImageBitmap) {
       try {
         imageSource = await createImageBitmap(file, { imageOrientation: "from-image" });
       } catch (e) {
-        console.warn("createImageBitmap with orientation failed, falling back to standard load", e);
+        console.warn("createImageBitmap failed, using fallback", e);
       }
     }
 
@@ -1401,7 +1194,6 @@ async function handlePhotoFile(file) {
       imageSource = await loadStandardImage(file);
     }
 
-    // High resolution check: if either dimension > 6000 px, scale down to 4096 px max
     let naturalW = imageSource.width;
     let naturalH = imageSource.height;
 
@@ -1427,16 +1219,13 @@ async function handlePhotoFile(file) {
     state.photoNaturalHeight = naturalH;
     state.photoTransform = { zoom: 1.0, panX: 0, panY: 0, flipH: false };
 
-    // Update UI controls
     photoQuickBar.style.display = 'flex';
-    photoFineTuneWrap.style.display = 'flex';
+    photoHint.style.display = 'flex';
     zoomSlider.value = 100;
     zoomVal.innerText = '100%';
-    panXSlider.value = 0;
-    panYSlider.value = 0;
 
     renderPreview();
-    showToast("Photo loaded and aligned!");
+    showToast("Photo loaded and fitted to hexagon!");
   } catch (err) {
     console.error("Failed to process photo:", err);
     showToast("Failed to process photo. Please try another image.");
@@ -1474,18 +1263,6 @@ function clampPhotoPan() {
 
   state.photoTransform.panX = Math.max(-maxPanX, Math.min(maxPanX, state.photoTransform.panX));
   state.photoTransform.panY = Math.max(-maxPanY, Math.min(maxPanY, state.photoTransform.panY));
-
-  // Sync sliders
-  if (maxPanX > 0) {
-    panXSlider.value = Math.round((state.photoTransform.panX / maxPanX) * 100);
-  } else {
-    panXSlider.value = 0;
-  }
-  if (maxPanY > 0) {
-    panYSlider.value = Math.round((state.photoTransform.panY / maxPanY) * 100);
-  } else {
-    panYSlider.value = 0;
-  }
 }
 
 function setZoom(newZoom) {
@@ -1508,37 +1285,66 @@ function nudgePhoto(dx, dy) {
 // UI EVENT LISTENERS
 // ==========================================
 function setupEventListeners() {
-  // Badge Type Radio Buttons
-  document.querySelectorAll('input[name="badgeType"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      state.badgeType = e.target.value;
-      renderChips();
-      updateCaption();
+  // Full Name
+  fullNameInput.addEventListener('input', (e) => {
+    state.name = e.target.value;
+    nameCount.innerText = `${e.target.value.length}/40`;
+    renderPreview();
+  });
+
+  // Team Name
+  teamNameInput.addEventListener('input', (e) => {
+    state.team = e.target.value;
+    teamCount.innerText = `${e.target.value.length}/30`;
+    renderPreview();
+  });
+
+  // Role
+  roleInput.addEventListener('input', (e) => {
+    state.role = e.target.value;
+    roleCount.innerText = `${e.target.value.length}/35`;
+    renderPreview();
+  });
+
+  // Badge Title (Bottom Text)
+  badgeTitleInput.addEventListener('input', (e) => {
+    state.badgeTitle = e.target.value;
+    updateTitlePillHighlight(e.target.value);
+    renderPreview();
+  });
+
+  // Quick Title Pills
+  titlePills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const title = pill.dataset.title;
+      badgeTitleInput.value = title;
+      state.badgeTitle = title;
+      updateTitlePillHighlight(title);
       renderPreview();
     });
   });
 
-  // Name Input
-  fullNameInput.addEventListener('input', (e) => {
-    state.name = e.target.value;
-    updateCounts();
-    updateCaption();
-    renderPreview();
-  });
+  // Reset to Defaults (Reference Design)
+  resetDefaultsBtn.addEventListener('click', () => {
+    state.name = "Your Name Here";
+    state.team = "Your Team Name";
+    state.role = "Your Role Here";
+    state.badgeTitle = "VOLUNTEER";
+    state.photoSource = null;
 
-  // Team Input
-  teamNameInput.addEventListener('input', (e) => {
-    state.team = e.target.value;
-    updateCounts();
-    updateCaption();
-    renderPreview();
-  });
+    fullNameInput.value = state.name;
+    teamNameInput.value = state.team;
+    roleInput.value = state.role;
+    badgeTitleInput.value = state.badgeTitle;
+    nameCount.innerText = "14/40";
+    teamCount.innerText = "14/30";
+    roleCount.innerText = "14/35";
 
-  // Custom Detail Input
-  customRoleInput.addEventListener('input', (e) => {
-    state.detail = e.target.value;
-    updateCaption();
+    photoQuickBar.style.display = 'none';
+    photoHint.style.display = 'none';
+    updateTitlePillHighlight(state.badgeTitle);
     renderPreview();
+    showToast("Reset to reference design values");
   });
 
   // Card Only Checkbox
@@ -1547,32 +1353,9 @@ function setupEventListeners() {
     renderPreview();
   });
 
-  // Scale Selector
-  scaleSelect.addEventListener('change', (e) => {
-    state.scale = parseInt(e.target.value, 10);
-    const hints = {
-      3: "3072 × 4608 px • Ultra HD",
-      2: "2048 × 3072 px • HD",
-      1: "1024 × 1536 px • Standard"
-    };
-    downloadResolutionHint.innerText = hints[state.scale] || "";
-  });
-
   // Download Buttons
-  downloadPrimaryBtn.addEventListener('click', () => handleDownload(scaleSelect.value));
-  mobileDownloadBtn.addEventListener('click', () => handleDownload(scaleSelect.value));
-
-  // Share Button
-  shareBtn.addEventListener('click', handleShare);
-
-  // Copy Caption Button
-  copyCaptionBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(captionText.innerText).then(() => {
-      showToast("Caption copied to clipboard!");
-    }).catch(() => {
-      showToast("Failed to copy caption");
-    });
-  });
+  downloadPrimaryBtn.addEventListener('click', handleDownload);
+  mobileDownloadBtn.addEventListener('click', handleDownload);
 
   // Dropzone & File Input
   dropzone.addEventListener('click', () => photoFileInput.click());
@@ -1616,29 +1399,6 @@ function setupEventListeners() {
     renderPreview();
   });
 
-  // Fine-tune Sliders
-  panXSlider.addEventListener('input', (e) => {
-    if (!state.photoSource) return;
-    const hex = LAYOUT.hex;
-    const nw = state.photoNaturalWidth;
-    const baseScale = Math.max(hex.w / nw, hex.h / state.photoNaturalHeight);
-    const dispW = nw * baseScale * state.photoTransform.zoom;
-    const maxPanX = Math.max(0, (dispW - hex.w) / 2);
-    state.photoTransform.panX = (parseInt(e.target.value, 10) / 100) * maxPanX;
-    renderPreview();
-  });
-
-  panYSlider.addEventListener('input', (e) => {
-    if (!state.photoSource) return;
-    const hex = LAYOUT.hex;
-    const nh = state.photoNaturalHeight;
-    const baseScale = Math.max(hex.w / state.photoNaturalWidth, hex.h / nh);
-    const dispH = nh * baseScale * state.photoTransform.zoom;
-    const maxPanY = Math.max(0, (dispH - hex.h) / 2);
-    state.photoTransform.panY = (parseInt(e.target.value, 10) / 100) * maxPanY;
-    renderPreview();
-  });
-
   // Flip & Reset Buttons
   flipBtn.addEventListener('click', () => {
     state.photoTransform.flipH = !state.photoTransform.flipH;
@@ -1649,58 +1409,26 @@ function setupEventListeners() {
     state.photoTransform = { zoom: 1.0, panX: 0, panY: 0, flipH: false };
     zoomSlider.value = 100;
     zoomVal.innerText = '100%';
-    panXSlider.value = 0;
-    panYSlider.value = 0;
     renderPreview();
   });
 
-  // Reference & Debug Mode Buttons
-  refModeBtn.addEventListener('click', () => {
-    state.refMode = !state.refMode;
-    refModeBtn.classList.toggle('active', state.refMode);
-    refCompareBox.style.display = state.refMode ? 'block' : 'none';
-    if (state.refMode) {
-      setReferenceModeData();
-    }
-    renderPreview();
-  });
-
+  // Debug Outlines
   debugModeBtn.addEventListener('click', () => {
     state.debugMode = !state.debugMode;
     debugModeBtn.classList.toggle('active', state.debugMode);
     renderPreview();
   });
 
-  closeRefBoxBtn.addEventListener('click', () => {
-    refCompareBox.style.display = 'none';
-  });
-
-  // Comparison Tabs
-  document.querySelectorAll('.tab-btn').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.compare-view').forEach(v => v.classList.remove('active'));
-      e.target.classList.add('active');
-      const target = e.target.dataset.tab;
-      if (target === 'side-by-side') document.getElementById('sideBySideView').classList.add('active');
-      else if (target === 'overlay') document.getElementById('overlayView').classList.add('active');
-      else if (target === 'diff') {
-        document.getElementById('diffView').classList.add('active');
-        updateDiff();
-      }
-    });
-  });
-
-  // Overlay Slider
-  overlaySlider.addEventListener('input', (e) => {
-    overlayGenMask.style.width = `${e.target.value}%`;
-  });
-
   // Canvas Drag & Pinch & Wheel Interaction
   setupCanvasInteractions();
 }
 
-// Canvas Touch & Mouse Drag / Zoom
+function updateTitlePillHighlight(currentTitle) {
+  titlePills.forEach(p => {
+    p.classList.toggle('active', p.dataset.title === currentTitle.toUpperCase());
+  });
+}
+
 function setupCanvasInteractions() {
   const container = document.getElementById('canvasContainer');
   let isDragging = false;
@@ -1709,7 +1437,6 @@ function setupCanvasInteractions() {
   let initialPinchDist = 0;
   let initialZoom = 1.0;
 
-  // Mouse wheel zoom
   container.addEventListener('wheel', (e) => {
     if (!state.photoSource) return;
     e.preventDefault();
@@ -1717,7 +1444,6 @@ function setupCanvasInteractions() {
     setZoom(state.photoTransform.zoom + delta);
   }, { passive: false });
 
-  // Mouse drag
   container.addEventListener('mousedown', (e) => {
     if (!state.photoSource) return;
     isDragging = true;
@@ -1744,7 +1470,6 @@ function setupCanvasInteractions() {
     isDragging = false;
   });
 
-  // Touch Drag & Pinch
   container.addEventListener('touchstart', (e) => {
     if (!state.photoSource) return;
     if (e.touches.length === 1) {
@@ -1794,8 +1519,6 @@ function setupCanvasInteractions() {
     initialPinchDist = 0;
   });
 
-  // Keyboard navigation when canvas is focused
-  container.setAttribute('tabindex', '0');
   container.addEventListener('keydown', (e) => {
     if (!state.photoSource) return;
     const step = e.shiftKey ? 20 : 5;
@@ -1808,88 +1531,6 @@ function setupCanvasInteractions() {
   });
 }
 
-// ==========================================
-// FORM CHIPS & CAPTION
-// ==========================================
-function renderChips() {
-  chipChoices.innerHTML = '';
-  customRoleWrap.style.display = 'none';
-
-  if (state.badgeType === "Participant") {
-    roleBarLabel.innerHTML = 'Event <span class="required">*</span>';
-    const list = [...CONFIG.events, "Other…"];
-    list.forEach(item => {
-      const chip = createChip(item, item === state.detail);
-      chipChoices.appendChild(chip);
-    });
-    if (!CONFIG.events.includes(state.detail)) {
-      customRoleWrap.style.display = 'block';
-    }
-  } else if (state.badgeType === "Volunteer") {
-    roleBarLabel.innerHTML = 'Segment <span class="required">*</span>';
-    const list = [...CONFIG.segments, "Other…"];
-    list.forEach(item => {
-      const chip = createChip(item, item === state.detail);
-      chipChoices.appendChild(chip);
-    });
-    if (!CONFIG.segments.includes(state.detail)) {
-      customRoleWrap.style.display = 'block';
-    }
-  } else if (state.badgeType === "Coordinator") {
-    roleBarLabel.innerHTML = 'Role <span class="required">*</span>';
-    customRoleWrap.style.display = 'block';
-    if (!state.detail || CONFIG.events.includes(state.detail) || CONFIG.segments.includes(state.detail)) {
-      state.detail = CONFIG.coordinatorDefault;
-      customRoleInput.value = state.detail;
-    }
-  }
-}
-
-function createChip(name, isActive) {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = `chip ${isActive ? 'active' : ''}`;
-  btn.innerText = name;
-
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-
-    if (name === "Other…") {
-      state.isCustomDetail = true;
-      customRoleWrap.style.display = 'block';
-      customRoleInput.focus();
-      state.detail = customRoleInput.value.trim() || "Participant";
-    } else {
-      state.isCustomDetail = false;
-      customRoleWrap.style.display = 'none';
-      state.detail = name;
-    }
-    updateCaption();
-    renderPreview();
-  });
-
-  return btn;
-}
-
-function updateCounts() {
-  nameCount.innerText = `${fullNameInput.value.length}/40`;
-  teamCount.innerText = `${teamNameInput.value.length}/30`;
-}
-
-function updateCaption() {
-  const template = CONFIG.captions[state.badgeType] || CONFIG.captions.Participant;
-  const detail = state.detail || "Event";
-  const hashtags = CONFIG.hashtags.join(" ");
-
-  let cap = template
-    .replace("{detail}", detail)
-    .replace("{venue}", CONFIG.venue)
-    .replace("{hashtags}", hashtags);
-
-  captionText.innerText = cap;
-}
-
 function showToast(msg, duration = 3000) {
   toast.innerText = msg;
   toast.classList.add('show');
@@ -1898,78 +1539,11 @@ function showToast(msg, duration = 3000) {
   }, duration);
 }
 
-// ==========================================
-// REFERENCE COMPARISON & DIFF CALCULATION
-// ==========================================
-function updateRefPreview() {
-  const dataUrl = canvas.toDataURL('image/png');
-  if (genPreviewImg) genPreviewImg.src = dataUrl;
-  if (overlayGenImg) overlayGenImg.src = dataUrl;
-}
-
-function updateDiff() {
-  if (!state.referenceImg || !state.referenceImg.complete) return;
-
-  const diffCtx = diffCanvas.getContext('2d');
-  diffCanvas.width = LAYOUT.width;
-  diffCanvas.height = LAYOUT.height;
-
-  // Render pure generated 1x canvas
-  const genCanvas = document.createElement('canvas');
-  genCanvas.width = LAYOUT.width;
-  genCanvas.height = LAYOUT.height;
-  const gCtx = genCanvas.getContext('2d');
-  drawBadge(gCtx, state, { scale: 1, cardOnly: false, debugMode: false });
-
-  // Draw reference to offscreen canvas
-  const refCanvas = document.createElement('canvas');
-  refCanvas.width = LAYOUT.width;
-  refCanvas.height = LAYOUT.height;
-  const rCtx = refCanvas.getContext('2d');
-  rCtx.drawImage(state.referenceImg, 0, 0, LAYOUT.width, LAYOUT.height);
-
-  const genData = gCtx.getImageData(0, 0, LAYOUT.width, LAYOUT.height);
-  const refData = rCtx.getImageData(0, 0, LAYOUT.width, LAYOUT.height);
-  const diffImgData = diffCtx.createImageData(LAYOUT.width, LAYOUT.height);
-
-  let totalDiff = 0;
-  let count = 0;
-  const threshold = 30; // Tolerance for compression artifacts & antialiasing
-
-  for (let i = 0; i < genData.data.length; i += 4) {
-    const dr = Math.abs(genData.data[i] - refData.data[i]);
-    const dg = Math.abs(genData.data[i + 1] - refData.data[i + 1]);
-    const db = Math.abs(genData.data[i + 2] - refData.data[i + 2]);
-    const diff = (dr + dg + db) / 3;
-
-    if (diff > threshold) {
-      // Highlight mismatch in magenta / red
-      diffImgData.data[i] = 255;
-      diffImgData.data[i + 1] = 0;
-      diffImgData.data[i + 2] = 128;
-      diffImgData.data[i + 3] = 255;
-      totalDiff++;
-    } else {
-      // Show subtle dark version of reference
-      diffImgData.data[i] = Math.floor(refData.data[i] * 0.25);
-      diffImgData.data[i + 1] = Math.floor(refData.data[i + 1] * 0.25);
-      diffImgData.data[i + 2] = Math.floor(refData.data[i + 2] * 0.25);
-      diffImgData.data[i + 3] = 255;
-    }
-    count++;
-  }
-
-  diffCtx.putImageData(diffImgData, 0, 0);
-  const mismatchPercent = ((totalDiff / count) * 100).toFixed(2);
-  diffStats.innerText = `Pixel mismatch (>30 threshold): ${mismatchPercent}% (includes background glow & texture variations)`;
-}
-
-// Expose key API to window for testing and automation
+// Window API for test suite
 window.renderExportBlob = renderExportBlob;
 window.state = state;
 window.drawBadge = drawBadge;
 window.setZoom = setZoom;
 window.nudgePhoto = nudgePhoto;
 
-// Start application
 window.addEventListener('DOMContentLoaded', init);
