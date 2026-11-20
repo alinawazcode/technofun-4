@@ -1,0 +1,9 @@
+{
+  "name": "technofun-4-badge-generator",
+  "version": "1.0.0",
+  "description": "TechnoFun 4.0 ID Badge Generator",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
+

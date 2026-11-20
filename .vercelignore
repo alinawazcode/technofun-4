@@ -1,0 +1,7 @@
+reference/
+references/
+tools/
+node_modules/
+test-results/
+.git/
+
