@@ -66,15 +66,15 @@ const LAYOUT = {
   hex: {
     cx: 512,
     cy: 650,
-    w: 350,
-    h: 360,
+    w: 404,
+    h: 416,
     vertices: [
-      { x: 512, y: 470 }, // Top
-      { x: 687, y: 565 }, // Top-Right
-      { x: 687, y: 735 }, // Bottom-Right
-      { x: 512, y: 830 }, // Bottom
-      { x: 337, y: 735 }, // Bottom-Left
-      { x: 337, y: 565 }  // Top-Left
+      { x: 512, y: 442 }, // Top
+      { x: 714, y: 546 }, // Top-Right
+      { x: 714, y: 754 }, // Bottom-Right
+      { x: 512, y: 858 }, // Bottom
+      { x: 310, y: 754 }, // Bottom-Left
+      { x: 310, y: 546 }  // Top-Left
     ]
   },
   lanyard: { x: 380, y: 0, w: 265, h: 230 },
@@ -630,9 +630,9 @@ function drawWatermark(ctx, s) {
   ctx.fillStyle = CONFIG.colors.watermark;
   ctx.textBaseline = "middle";
 
-  const maxSideWidth = 240;
-  const leftTargetX = 328;
-  const rightTargetX = 696;
+  const maxSideWidth = 220;
+  const leftTargetX = 302;
+  const rightTargetX = 722;
   const centerY = 642;
 
   let fontSize = 180;
@@ -729,15 +729,15 @@ function drawPlaceholderSilhouette(ctx, hex) {
 
   // Head
   ctx.beginPath();
-  ctx.arc(hex.cx, hex.cy - 68, 38, 0, Math.PI * 2);
+  ctx.arc(hex.cx, hex.cy - 76, 45, 0, Math.PI * 2);
   ctx.fill();
 
   // Shoulders & Torso
   ctx.beginPath();
-  ctx.moveTo(hex.cx - 30, hex.cy - 20);
-  ctx.bezierCurveTo(hex.cx - 85, hex.cy + 10, hex.cx - 120, hex.cy + 80, hex.cx - 130, hex.cy + 150);
-  ctx.lineTo(hex.cx + 130, hex.cy + 150);
-  ctx.bezierCurveTo(hex.cx + 120, hex.cy + 80, hex.cx + 85, hex.cy + 10, hex.cx + 30, hex.cy - 20);
+  ctx.moveTo(hex.cx - 36, hex.cy - 20);
+  ctx.bezierCurveTo(hex.cx - 100, hex.cy + 12, hex.cx - 145, hex.cy + 95, hex.cx - 156, hex.cy + 180);
+  ctx.lineTo(hex.cx + 156, hex.cy + 180);
+  ctx.bezierCurveTo(hex.cx + 145, hex.cy + 95, hex.cx + 100, hex.cy + 12, hex.cx + 36, hex.cy - 20);
   ctx.closePath();
   ctx.fill();
 }
@@ -784,18 +784,19 @@ function drawFieldBars(ctx, s) {
   ctx.lineTo(240, 984);
   ctx.stroke();
 
-  // Name text
+  // Name text centered in content area
   const rawName = (s.name || "").trim() || "Your Name Here";
   drawAutoFitText(ctx, {
     text: rawName,
-    startX: 260,
+    startX: 552,
     baselineY: 957,
-    maxWidth: 620,
+    maxWidth: 590,
     baseSize: 52,
     minSize: 24,
     fontFamily: "Poppins, sans-serif",
     fontWeight: "700",
-    color: "#FFFFFF"
+    color: "#FFFFFF",
+    align: "center"
   });
 
   // 2. Team Bar (Shows if team is present, collapses if empty)
@@ -813,22 +814,26 @@ function drawFieldBars(ctx, s) {
     ctx.lineTo(268, 1118);
     ctx.stroke();
 
-    // Label "Team:"
+    // Label "Team:" centered in content area
+    ctx.save();
     ctx.font = "600 18px Poppins, sans-serif";
     ctx.fillStyle = "#9E7BFF";
-    ctx.fillText("Team:", 290, 1068);
+    ctx.textAlign = "center";
+    ctx.fillText("Team:", 545, 1068);
+    ctx.restore();
 
-    // Value "Your Team Name"
+    // Value "Your Team Name" centered in content area
     drawAutoFitText(ctx, {
       text: s.team.trim(),
-      startX: 290,
+      startX: 545,
       baselineY: 1106,
-      maxWidth: 520,
+      maxWidth: 510,
       baseSize: 38,
       minSize: 18,
       fontFamily: "Poppins, sans-serif",
       fontWeight: "600",
-      color: "#FFFFFF"
+      color: "#FFFFFF",
+      align: "center"
     });
   } else {
     roleBarPos = LAYOUT.roleBarShifted;
@@ -846,23 +851,27 @@ function drawFieldBars(ctx, s) {
   ctx.lineTo(268, roleBarPos.y + roleBarPos.h - 13);
   ctx.stroke();
 
-  // Label "Role:"
+  // Label "Role:" centered in content area
+  ctx.save();
   ctx.font = "600 18px Poppins, sans-serif";
   ctx.fillStyle = "#9E7BFF";
-  ctx.fillText("Role:", 290, roleBarPos.y + 33);
+  ctx.textAlign = "center";
+  ctx.fillText("Role:", 545, roleBarPos.y + 33);
+  ctx.restore();
 
-  // Value "Your Role Here"
+  // Value "Your Role Here" centered in content area
   const rawRole = (s.role || "").trim() || "Your Role Here";
   drawAutoFitText(ctx, {
     text: rawRole,
-    startX: 290,
+    startX: 545,
     baselineY: roleBarPos.y + 71,
-    maxWidth: 520,
+    maxWidth: 510,
     baseSize: 38,
     minSize: 18,
     fontFamily: "Poppins, sans-serif",
     fontWeight: "600",
-    color: "#FFFFFF"
+    color: "#FFFFFF",
+    align: "center"
   });
 }
 
@@ -908,6 +917,7 @@ function drawAutoFitText(ctx, opts) {
     textWidth = ctx.measureText(opts.text).width;
   }
 
+  ctx.textAlign = opts.align || "left";
   ctx.fillStyle = opts.color;
   ctx.fillText(opts.text, opts.startX, opts.baselineY);
   ctx.restore();

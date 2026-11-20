@@ -143,8 +143,8 @@ body {
 /* Main Workspace */
 .main-workspace {
   display: grid;
-  grid-template-columns: minmax(360px, 480px) 1fr;
-  gap: 36px;
+  grid-template-columns: minmax(290px, 350px) 1fr;
+  gap: 32px;
   align-items: start;
   flex: 1;
 }
@@ -162,7 +162,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -172,7 +172,7 @@ body {
 .canvas-wrapper {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 330px;
   aspect-ratio: 2 / 3;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -202,9 +202,9 @@ body {
 /* Photo Quick Tools */
 .photo-controls-bar {
   width: 100%;
-  max-width: 420px;
-  margin-top: 14px;
-  padding: 12px 14px;
+  max-width: 330px;
+  margin-top: 12px;
+  padding: 10px 12px;
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -1007,7 +1007,7 @@ body {
   }
   
   .preview-card-wrap {
-    max-width: 380px;
+    max-width: 350px;
     margin: 0 auto;
   }
 }
