@@ -804,7 +804,7 @@ function drawFieldBars(ctx, s) {
 
   if (hasTeam) {
     drawHexagonalBar(ctx, LAYOUT.teamBar, "#5F3DDB", "#08080A");
-    drawPeopleIcon(ctx, 230, 1083, "#CCCCCC");
+    drawPeopleIcon(ctx, 235, 1083, "#E2E2E6");
 
     // Vertical violet divider
     ctx.strokeStyle = "#6E48FF";
@@ -841,7 +841,7 @@ function drawFieldBars(ctx, s) {
 
   // 3. Role Bar
   drawHexagonalBar(ctx, roleBarPos, "#5F3DDB", "#08080A");
-  drawBriefcaseIcon(ctx, 230, roleBarPos.y + roleBarPos.h / 2, "#CCCCCC");
+  drawBriefcaseIcon(ctx, 235, roleBarPos.y + roleBarPos.h / 2, "#E2E2E6");
 
   // Vertical violet divider
   ctx.strokeStyle = "#6E48FF";
@@ -943,36 +943,56 @@ function drawPeopleIcon(ctx, cx, cy, color) {
   ctx.save();
   ctx.fillStyle = color;
 
+  // 1. Background Left Person
   ctx.beginPath();
-  ctx.arc(cx, cy - 11, 8, 0, Math.PI * 2);
+  ctx.arc(cx - 16, cy - 7, 6.5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(cx - 14, cy + 15);
-  ctx.bezierCurveTo(cx - 14, cy + 1, cx - 7, cy - 1, cx, cy - 1);
-  ctx.bezierCurveTo(cx + 7, cy - 1, cx + 14, cy + 1, ctx.cx + 14, cy + 15);
+  ctx.moveTo(cx - 24, cy + 16);
+  ctx.bezierCurveTo(cx - 24, cy + 6, cx - 18, cy + 2, cx - 12, cy + 2);
+  ctx.bezierCurveTo(cx - 7, cy + 2, cx - 3, cy + 5, cx, cy + 8);
+  ctx.lineTo(cx, cy + 16);
   ctx.closePath();
   ctx.fill();
 
+  // 2. Background Right Person
   ctx.beginPath();
-  ctx.arc(cx - 16, cy - 8, 6, 0, Math.PI * 2);
+  ctx.arc(cx + 16, cy - 7, 6.5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(cx - 24, cy + 14);
-  ctx.bezierCurveTo(cx - 24, cy + 3, cx - 18, cy + 2, cx - 14, cy + 5);
-  ctx.lineTo(cx - 14, cy + 14);
+  ctx.moveTo(cx + 24, cy + 16);
+  ctx.bezierCurveTo(cx + 24, cy + 6, cx + 18, cy + 2, cx + 12, cy + 2);
+  ctx.bezierCurveTo(cx + 7, cy + 2, cx + 3, cy + 5, cx, cy + 8);
+  ctx.lineTo(cx, cy + 16);
   ctx.closePath();
   ctx.fill();
 
+  // 3. Foreground Center Person Cutout (dark stroke to cleanly separate from background figures)
+  ctx.lineWidth = 2.4;
+  ctx.strokeStyle = "#08080A";
+
   ctx.beginPath();
-  ctx.arc(cx + 16, cy - 8, 6, 0, Math.PI * 2);
+  ctx.arc(cx, cy - 11, 8.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 15, cy + 16);
+  ctx.bezierCurveTo(cx - 15, cy + 3, cx - 9, cy - 1, cx, cy - 1);
+  ctx.bezierCurveTo(cx + 9, cy - 1, cx + 15, cy + 3, cx + 15, cy + 16);
+  ctx.closePath();
+  ctx.stroke();
+
+  // 4. Foreground Center Person Fill
+  ctx.beginPath();
+  ctx.arc(cx, cy - 11, 8.5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.moveTo(cx + 24, cy + 14);
-  ctx.bezierCurveTo(cx + 24, cy + 3, cx + 18, cy + 2, cx + 14, cy + 5);
-  ctx.lineTo(cx + 14, cy + 14);
+  ctx.moveTo(cx - 15, cy + 16);
+  ctx.bezierCurveTo(cx - 15, cy + 3, cx - 9, cy - 1, cx, cy - 1);
+  ctx.bezierCurveTo(cx + 9, cy - 1, cx + 15, cy + 3, cx + 15, cy + 16);
   ctx.closePath();
   ctx.fill();
 
